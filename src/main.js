@@ -44,6 +44,7 @@ runLoader(ctx).then(() => {
   heroIntro();
   loadLeaves();
   loadPlant();
+  openBookOnArrival();
   if (import.meta.env.DEV) devShot();
 });
 
@@ -65,6 +66,16 @@ function heroIntro() {
 // stays the first thing they read). The scene is rebuilt when the layout
 // crosses a breakpoint, so it always lives in the right place.
 // The coaching plant grows in 3D on desktops; it loads only when the section comes near.
+// Touch screens have no hover: the EP storybook opens once the card scrolls into view.
+function openBookOnArrival() {
+  const win = document.querySelector('.ep-window');
+  if (!win || !matchMedia('(hover: none), (max-width: 1023px)').matches) return;
+  const io = new IntersectionObserver(([e]) => {
+    if (e.isIntersecting) { win.classList.add('is-open'); io.disconnect(); }
+  }, { threshold: 0.6 });
+  io.observe(win);
+}
+
 function loadPlant() {
   const slot = document.querySelector('.sprout');
   if (reduce || !slot || !hasWebGL()) return;

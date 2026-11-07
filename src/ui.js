@@ -65,7 +65,7 @@ function nav({ ScrollTrigger, lenis }) {
       head.classList.toggle('is-scrolled', y > 10);
       fab?.classList.toggle('is-down', y > 600);
       if (document.body.classList.contains('menu-open') || head.contains(document.activeElement)) return;
-      head.classList.toggle('is-hidden', window.innerWidth < 1024 && y > lastY && y > 260);
+      head.classList.toggle('is-hidden', y > lastY && y > 260);
       lastY = y;
     },
   });
