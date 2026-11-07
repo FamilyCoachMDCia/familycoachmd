@@ -1,0 +1,23 @@
+{
+  "redirects": [
+    { "source": "/home", "destination": "/", "permanent": true },
+    { "source": "/about", "destination": "/#about", "permanent": true },
+    { "source": "/private-family-coaching", "destination": "/#coaching", "permanent": true },
+    { "source": "/parenting-course", "destination": "/#courses", "permanent": true },
+    { "source": "/courses", "destination": "/#courses", "permanent": true },
+    { "source": "/workshop", "destination": "/#courses", "permanent": true },
+    { "source": "/childcare-center-consultant/collaborate", "destination": "/#schools", "permanent": true },
+    { "source": "/childcare-center-consultant/yale-assessment-td27b", "destination": "/#assessment", "permanent": true },
+    { "source": "/childcare-center-consultant/staffeducation-jgx5f", "destination": "/#schools", "permanent": true },
+    { "source": "/childcare-center-consultant/staffeducation-jgx5f-z7e5e", "destination": "/#schools", "permanent": true },
+    { "source": "/childcare-center-consultant/:slug*", "destination": "/#schools", "permanent": true },
+    { "source": "/childcare-center-consultant", "destination": "/#schools", "permanent": true },
+    { "source": "/Services", "destination": "/#schools", "permanent": true },
+    { "source": "/services", "destination": "/#schools", "permanent": true },
+    { "source": "/work-with-me", "destination": "/#begin", "permanent": true },
+    { "source": "/contact", "destination": "/#begin", "permanent": true },
+    { "source": "/blog", "destination": "/#learning", "permanent": true },
+    { "source": "/blog/:slug*", "destination": "/#learning", "permanent": true },
+    { "source": "/cart", "destination": "/", "permanent": true }
+  ]
+}
