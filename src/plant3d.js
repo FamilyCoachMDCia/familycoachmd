@@ -7,8 +7,7 @@ import { motionState } from './ui.js';
 // "yes" in the checklist (a lot). The SVG sprout stays underneath as the fallback.
 
 const NODES = 7;
-const THRESH = [0.08, 0.2, 0.32, 0.46, 0.6, 0.74, 0.88];
-const GOLDEN = 2.39996; // 137.5° in radians
+const THRESH = [0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 0.98];
 const LEAF_COLORS = ['#8C9A5B', '#6E7157', '#8C9A5B', '#6E7157', '#8C9A5B', '#A9B48A', '#D3D8A4'];
 
 export function initPlant3d(slot, state) {
@@ -83,18 +82,22 @@ export function initPlant3d(slot, state) {
   const indexCount = stemGeo.index.count;
   const perSeg = indexCount / SEG;
 
-  // Leaves along the stem, spiralling by the golden angle like a real plant.
+  // Leaves alternate left and right in one plane facing the viewer (like a
+  // pressed specimen), turned only slightly so they keep their 3D curl.
   const leaves = [];
   for (let i = 0; i < NODES; i++) {
-    const t = 0.16 + (i / (NODES - 1)) * 0.82;
-    const L = i === NODES - 1 ? 1.1 : 1.55 - i * 0.08;
+    const top = i === NODES - 1;
+    const t = top ? 1 : 0.14 + (i / (NODES - 2)) * 0.76;
+    const L = top ? 1.05 : 1.6 - i * 0.1;
     const leaf = makeLeaf(L, LEAF_COLORS[i], '#B9BEA0', '#3C4136');
+    const side = i % 2 ? 1 : -1; // -1 = left, 1 = right
     const holder = new THREE.Group();
     const p = curve.getPointAt(t);
     holder.position.copy(p);
-    holder.rotation.y = i * GOLDEN;
+    holder.rotation.y = top ? 0 : side * 0.32;
     const tilt = new THREE.Group();
-    tilt.rotation.z = i === NODES - 1 ? 0 : (i % 2 ? -1 : 1) * 0.95;
+    tilt.rotation.z = top ? 0 : -side * (1.05 - i * 0.04);
+    tilt.rotation.x = top ? 0.1 : 0.22;
     tilt.add(leaf.group);
     holder.add(tilt);
     leaf.group.scale.setScalar(0.001);
@@ -159,7 +162,7 @@ export function initPlant3d(slot, state) {
     poke *= 0.96;
     const still = motionState.paused;
     pivot.rotation.z = still ? 0 : Math.sin(time * 0.8) * 0.025 + wind * 0.03 + Math.sin(time * 9) * 0.05 * poke;
-    root.rotation.y = still ? 0 : Math.sin(time * 0.25) * 0.18 + wind * 0.12;
+    root.rotation.y = still ? 0 : Math.sin(time * 0.25) * 0.05 + wind * 0.05;
     const breath = still ? 1 : 1 + Math.sin(time * (Math.PI * 2 / 8)) * 0.012;
     pivot.scale.setScalar(breath);
 
