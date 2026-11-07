@@ -1,6 +1,6 @@
 // 00 · Loader: "Take a breath". An amber sun breathes in and out while the
 // logo's two leaves drift down onto the stem; then the page opens from the sun.
-const HARD_CAP = 3600;   // ms from start: exit no matter what
+const HARD_CAP = 4600;   // ms from start: exit no matter what
 const SEEN_KEY = 'fcmd-loader-seen';
 
 export function runLoader({ gsap, reduce }) {
@@ -36,10 +36,15 @@ export function runLoader({ gsap, reduce }) {
   const center = svg.querySelector('.fcmd-stem-center');
   const leafSmall = svg.querySelector('.fcmd-leaf-small');
   const leafBig = svg.querySelector('.fcmd-leaf-big');
-  const glyphs = svg.querySelectorAll('.glyph');
+  // The two right-most glyphs are the M and the D: they arrive late, sleepy, and plop down.
+  const all = [...svg.querySelectorAll('.glyph')].sort((a, b) => a.getBBox().x - b.getBBox().x);
+  const [gm, gd] = all.slice(-2);
+  const glyphs = all.slice(0, -2);
+  const gh = glyphs[glyphs.length - 1];
 
   gsap.set(center, { drawSVG: '0%' });
   gsap.set(glyphs, { y: 120, rotation: 5, opacity: 0, transformOrigin: '50% 100%' });
+  gsap.set([gm, gd], { x: 440, y: 0, rotation: 0, opacity: 0, transformOrigin: '50% 100%' });
   gsap.set(leafBig, { svgOrigin: leafBig.dataset.origin, x: 900, y: -1500, rotation: 50, opacity: 0 });
   gsap.set(leafSmall, { svgOrigin: leafSmall.dataset.origin, x: -1700, y: -1300, rotation: -60, opacity: 0 });
   gsap.set(sunEl, { opacity: 0, scale: 1 });
@@ -65,9 +70,23 @@ export function runLoader({ gsap, reduce }) {
     .to(leafSmall, { x: 0, y: 0, duration: 1.0, ease: 'power2.out' }, 1.7)
     .to(leafSmall, { keyframes: { rotation: [-60, 26, -12, 5, 0] }, duration: 1.0, ease: 'sine.inOut' }, 1.7)
     .to(glyphs, { y: 0, rotation: 0, opacity: 1, duration: 0.55, stagger: 0.045, ease: 'power3.out' }, 1.9)
+    // "Where are they?" The h glances sideways…
+    .to(gh, { rotation: 3, duration: 0.12, yoyo: true, repeat: 1, ease: 'sine.inOut' }, 2.45)
+    // …the M shuffles in, sleepy and wobbly…
+    .to(gm, { opacity: 1, duration: 0.15 }, 2.55)
+    .to(gm, { x: 0, duration: 0.6, ease: 'sine.inOut' }, 2.55)
+    .to(gm, { keyframes: { y: [-8, 0, -6, 0], rotation: [-6, 4, -3, 1] }, duration: 0.6, ease: 'sine.inOut' }, 2.55)
+    // …the D trips in behind it, overshoots and plops down…
+    .to(gd, { opacity: 1, duration: 0.15 }, 2.7)
+    .to(gd, { keyframes: { x: [440, -14, 0], y: [-12, 22, 0], rotation: [8, 18, -4, 0] }, duration: 0.6, ease: 'power1.inOut' }, 2.7)
+    // …bumps the M, and both sit down. Oops, sorry!
+    .to(gm, { keyframes: { rotation: [1, -4, 2, 0] }, duration: 0.3, ease: 'sine.out' }, 3.3)
+    .to(gh, { keyframes: { x: [0, -6, 0] }, duration: 0.25, ease: 'sine.out' }, 3.3)
+    .fromTo([gm, gd], { scaleY: 0.86 }, { scaleY: 1, duration: 0.25, ease: 'back.out(2.5)' }, 3.35)
+    .call(() => say(3), null, 3.4)
     // The leaves touch: one soft pulse.
-    .to(wrap, { scale: 1.04, duration: 0.18, yoyo: true, repeat: 1, ease: 'sine.inOut' }, 2.7)
-    .call(() => say(-1), null, 2.7);
+    .to(wrap, { scale: 1.04, duration: 0.18, yoyo: true, repeat: 1, ease: 'sine.inOut' }, 3.6)
+    .call(() => say(-1), null, 3.95);
 
   if (seen) tl.timeScale(3);
   skip = () => tl.progress(1);

@@ -76,7 +76,7 @@ function patch(material, u, { hull = 0 } = {}) {
   return material;
 }
 
-function makeLeaf(L, color, sheen, rimColor) {
+export function makeLeaf(L, color, sheen, rimColor) {
   const u = {
     uTime: { value: 0 }, uFlutter: { value: 0.03 },
     uPhase: { value: Math.random() * 10 }, uLen: { value: L },

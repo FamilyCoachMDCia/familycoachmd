@@ -2,6 +2,8 @@ import { motionState } from './ui.js';
 
 // Shared with the 3D leaves: 0 = the early years … 4 = the thriving season.
 export const seasonState = { value: 0 };
+// Shared with the 3D plant in the coaching section.
+export const plantState = { checked: 0, scroll: 0 };
 
 const LINEN = '#F4EFE7';
 const TINTS = ['#E4E9D8', '#F6E6C4', '#EBD7CB', '#D6DCDE', LINEN];
@@ -219,7 +221,7 @@ function careSteps({ gsap, reduce }) {
 }
 
 // 07 · Each "yes" grows the sprout one stage.
-function checklist({ gsap, reduce }) {
+function checklist({ gsap, ScrollTrigger, reduce }) {
   const boxes = [...document.querySelectorAll('.checklist input')];
   const stem = document.querySelector('.sprout-stem');
   const leaves = gsap.utils.toArray('.sprout-leaf');
@@ -227,8 +229,10 @@ function checklist({ gsap, reduce }) {
   if (!boxes.length || !stem) return;
   leaves.forEach((l) => gsap.set(l, { svgOrigin: l.dataset.o, scale: 0 }));
   gsap.set(stem, { drawSVG: '0% 12%' });
+  ScrollTrigger.create({ trigger: '.checklist-grid', start: 'top 85%', end: 'center 55%', onUpdate: (self) => { plantState.scroll = self.progress; } });
   const grow = () => {
     const n = boxes.filter((b) => b.checked).length;
+    plantState.checked = n;
     const d = reduce ? 0 : 0.7;
     gsap.to(stem, { drawSVG: `0% ${12 + n * 17.6}%`, duration: d, ease: 'power2.out' });
     leaves.forEach((l, i) => gsap.to(l, { scale: i < n ? 1 : 0, duration: d, ease: i < n ? 'back.out(1.8)' : 'power2.in' }));
@@ -250,6 +254,23 @@ function balance({ gsap, reduce }) {
   gsap.set(beam, { svgOrigin: '240 168' });
   gsap.set(sprouts, { scale: 0, svgOrigin: '240 166' });
   const rot = gsap.quickTo(beam, 'rotation', { duration: reduce ? 0 : 0.9, ease: 'elastic.out(1, 0.45)' });
+  // The books slide a little on the tilted twig, top ones more than the middle ones; the base stays put.
+  const books = [...root.querySelectorAll('.book-top, .book-mid')].map((b) => {
+    gsap.set(b, { svgOrigin: b.dataset.o });
+    const k = b.classList.contains('book-top') ? [0.55, 0.2] : [0.25, 0.08];
+    const o = { duration: reduce ? 0 : 0.8, ease: 'elastic.out(1, 0.5)' };
+    return { el: b, k, x: gsap.quickTo(b, 'x', o), r: gsap.quickTo(b, 'rotation', o) };
+  });
+  const marks = root.querySelectorAll('.book-mark');
+  gsap.set(marks, { scale: 0, transformOrigin: '50% 100%' });
+  const slide = (t) => books.forEach((b) => {
+    if (reduce) return;
+    let dx = t * b.k[0];
+    let dr = t * b.k[1];
+    if (Math.abs(t) > 10 && b.k[0] > 0.5) { dx += Math.sign(t) * 2; dr += Math.sign(t) * 6; }
+    b.x(Math.max(-8, Math.min(8, dx)));
+    b.r(dr);
+  });
   let state = '';
   const text = {
     kind: ['Kind without firm: kids feel loved, but a little lost.', 'Mostly kind'],
@@ -259,13 +280,17 @@ function balance({ gsap, reduce }) {
   const update = (first) => {
     const v = Number(range.value);
     const next = Math.abs(v - 50) <= 8 ? 'balanced' : v < 50 ? 'kind' : 'firm';
-    rot(next === 'balanced' ? 0 : ((v - 50) / 50) * 13);
+    const tilt = next === 'balanced' ? 0 : ((v - 50) / 50) * 13;
+    rot(tilt);
+    slide(tilt);
     if (next === state) return;
     state = next;
     root.dataset.state = next;
     caption.textContent = text[next][0];
     range.setAttribute('aria-valuetext', text[next][1]);
     gsap.to(sprouts, { scale: next === 'balanced' ? 1 : 0, duration: reduce ? 0 : 0.6, stagger: 0.08, ease: next === 'balanced' ? 'back.out(2)' : 'power2.in' });
+    gsap.to(marks, { scale: next === 'balanced' ? 1 : 0, duration: reduce ? 0 : 0.5, stagger: 0.08, ease: next === 'balanced' ? 'back.out(2)' : 'power2.in' });
+    if (next === 'balanced' && !reduce && !first) gsap.fromTo(root.querySelectorAll('.book-top > g'), { y: -4 }, { y: 0, duration: 0.5, ease: 'bounce.out' });
     if (!first && hint) hint.style.visibility = 'hidden';
   };
   range.addEventListener('input', () => update(false));
@@ -273,7 +298,7 @@ function balance({ gsap, reduce }) {
 }
 
 // 09 · C.A.R.E.: on desktop the letters light up one by one while pinned.
-function careMethod({ gsap, ScrollTrigger, reduce }) {
+function careMethod({ gsap, ScrollTrigger, reduce, lenis }) {
   const section = document.querySelector('.care-method');
   if (!section) return;
   const letters = gsap.utils.toArray('.cm-letters span');
@@ -296,12 +321,18 @@ function careMethod({ gsap, ScrollTrigger, reduce }) {
     };
     gsap.set(steps, { autoAlpha: 0 });
     const st = ScrollTrigger.create({
-      trigger: '.cm-pin', start: 'top top', end: '+=2000', pin: true, anticipatePin: 1,
+      trigger: '.cm-pin', start: 'top top', end: '+=1200', pin: true, anticipatePin: 1,
       onUpdate: (self) => show(Math.min(3, Math.floor(self.progress * 4))),
       onEnter: () => show(0),
     });
     show(0);
-    return () => { section.classList.remove('is-pinned-mode'); st.kill(); gsap.set(steps, { clearProps: 'all' }); letters.forEach((l) => l.classList.remove('is-on')); cur = -1; };
+    const jump = (e) => {
+      const i = letters.indexOf(e.currentTarget);
+      const y = st.start + ((i + 0.5) / 4) * (st.end - st.start);
+      if (lenis) lenis.scrollTo(y, { duration: reduce ? 0 : 0.9 }); else window.scrollTo({ top: y, behavior: 'smooth' });
+    };
+    letters.forEach((l) => l.addEventListener('click', jump));
+    return () => { letters.forEach((l) => l.removeEventListener('click', jump)); section.classList.remove('is-pinned-mode'); st.kill(); gsap.set(steps, { clearProps: 'all' }); letters.forEach((l) => l.classList.remove('is-on')); cur = -1; };
   });
   mm.add('(max-width: 1023px)', () => {
     const a = gsap.from(steps, { y: 40, opacity: 0, duration: 0.8, stagger: 0.12, ease: 'power3.out', scrollTrigger: { trigger: '.cm-steps', start: 'top 85%', once: true } });

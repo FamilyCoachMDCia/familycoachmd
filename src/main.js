@@ -7,7 +7,7 @@ import Lenis from 'lenis';
 
 import { runLoader } from './loader.js';
 import { initUI } from './ui.js';
-import { initSections, seasonState } from './sections.js';
+import { initSections, seasonState, plantState } from './sections.js';
 
 gsap.registerPlugin(ScrollTrigger, SplitText, DrawSVGPlugin, MotionPathPlugin);
 
@@ -43,6 +43,7 @@ runLoader(ctx).then(() => {
   document.documentElement.classList.add('is-loaded');
   heroIntro();
   loadLeaves();
+  loadPlant();
   if (import.meta.env.DEV) devShot();
 });
 
@@ -63,6 +64,25 @@ function heroIntro() {
 // when WebGL works. Phones keep the static SVG logo (lighter, and the text
 // stays the first thing they read). The scene is rebuilt when the layout
 // crosses a breakpoint, so it always lives in the right place.
+// The coaching plant grows in 3D on desktops; it loads only when the section comes near.
+function loadPlant() {
+  const slot = document.querySelector('.sprout');
+  if (reduce || !slot || !hasWebGL()) return;
+  if (import.meta.env.DEV && new URLSearchParams(location.search).has('no3d')) return;
+  const desktop = matchMedia('(min-width: 1024px)');
+  let plant = null;
+  const io = new IntersectionObserver(([e]) => {
+    if (!e.isIntersecting || plant || !desktop.matches) return;
+    plant = true;
+    io.disconnect();
+    import('./plant3d.js').then(({ initPlant3d }) => {
+      plant = initPlant3d(slot, plantState);
+      desktop.addEventListener('change', (m) => { if (!m.matches) { plant?.destroy(); plant = null; } });
+    }).catch((err) => { plant = null; if (import.meta.env.DEV) console.error(err); });
+  }, { rootMargin: '800px' });
+  io.observe(slot);
+}
+
 function loadLeaves() {
   const heroSlot = document.querySelector('.hero-leaves-slot');
   if (reduce || !heroSlot || !hasWebGL()) return;

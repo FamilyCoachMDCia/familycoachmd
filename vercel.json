@@ -7,7 +7,6 @@
     { "source": "/courses", "destination": "/#courses", "permanent": true },
     { "source": "/workshop", "destination": "/#courses", "permanent": true },
     { "source": "/childcare-center-consultant/collaborate", "destination": "/#schools", "permanent": true },
-    { "source": "/childcare-center-consultant/yale-assessment-td27b", "destination": "/#assessment", "permanent": true },
     { "source": "/childcare-center-consultant/staffeducation-jgx5f", "destination": "/#schools", "permanent": true },
     { "source": "/childcare-center-consultant/staffeducation-jgx5f-z7e5e", "destination": "/#schools", "permanent": true },
     { "source": "/childcare-center-consultant/:slug*", "destination": "/#schools", "permanent": true },

@@ -51,16 +51,21 @@ function bar({ gsap, reduce }) {
   });
 }
 
-function nav({ ScrollTrigger }) {
+function nav({ ScrollTrigger, lenis }) {
   const head = document.getElementById('site-head');
   let lastY = 0;
+  // Phones: a floating "Jump to" opens the menu and "Top" returns up, so nobody has to scroll far.
+  const fab = document.querySelector('.jump-fab');
+  fab?.querySelector('.jump-menu')?.addEventListener('click', () => document.querySelector('.burger')?.click());
+  fab?.querySelector('.jump-top')?.addEventListener('click', () => { if (lenis) lenis.scrollTo(0); else window.scrollTo({ top: 0, behavior: 'smooth' }); });
   ScrollTrigger.create({
     start: 0, end: 'max',
     onUpdate: (self) => {
       const y = self.scroll();
       head.classList.toggle('is-scrolled', y > 10);
+      fab?.classList.toggle('is-down', y > 600);
       if (document.body.classList.contains('menu-open') || head.contains(document.activeElement)) return;
-      head.classList.toggle('is-hidden', y > lastY && y > 260);
+      head.classList.toggle('is-hidden', window.innerWidth < 1024 && y > lastY && y > 260);
       lastY = y;
     },
   });
@@ -114,7 +119,7 @@ function menu({ gsap, lenis, reduce }) {
     else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
   });
   // The menu only exists on small screens; close it if the window grows.
-  matchMedia('(min-width: 1024px)').addEventListener('change', (m) => { if (m.matches && open) set(false, { restoreFocus: false }); });
+  matchMedia('(min-width: 1181px)').addEventListener('change', (m) => { if (m.matches && open) set(false, { restoreFocus: false }); });
 }
 
 // In-page links: smooth scroll, then focus lands on the section heading so
