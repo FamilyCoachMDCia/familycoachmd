@@ -115,7 +115,6 @@ export function makeLeaf(L, color, sheen, rimColor) {
 
 export function initLeaves(host, { slots, compact = false, getSeason, tipEl }) {
   const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: window.devicePixelRatio <= 1.5, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
@@ -265,10 +264,20 @@ export function initLeaves(host, { slots, compact = false, getSeason, tipEl }) {
   };
 
   let W = 1, H = 1, k = 1;
+  let slotDirty = true;
+  const invalidateSlot = () => { slotDirty = true; };
   function resize() {
     const r = host.getBoundingClientRect();
-    W = Math.max(r.width, 1);
-    H = Math.max(r.height, 1);
+    const w = Math.max(r.width, 1);
+    const h = Math.max(r.height, 1);
+    // The desktop canvas covers the whole viewport, even though the model
+    // only occupies one slot. Bound the number of pixels on large displays.
+    const pixelRatio = Math.min(window.devicePixelRatio, 1.5, Math.sqrt(1_400_000 / (w * h)));
+    invalidateSlot();
+    if (w === W && h === H && pixelRatio === renderer.getPixelRatio()) return;
+    W = w;
+    H = h;
+    if (pixelRatio !== renderer.getPixelRatio()) renderer.setPixelRatio(pixelRatio);
     renderer.setSize(W, H, false);
     camera.aspect = W / H;
     camera.updateProjectionMatrix();
@@ -276,6 +285,10 @@ export function initLeaves(host, { slots, compact = false, getSeason, tipEl }) {
   }
   resize();
   window.addEventListener('resize', resize);
+  window.addEventListener('scroll', invalidateSlot, { passive: true });
+  const sizes = new ResizeObserver(resize);
+  sizes.observe(host);
+  slots.forEach(({ el }) => sizes.observe(el));
 
   // Cursor as wind.
   const pointer = { x: -9999, y: -9999, vx: 0, px: 0.5, py: 0.5 };
@@ -319,9 +332,13 @@ export function initLeaves(host, { slots, compact = false, getSeason, tipEl }) {
   const tmp = new THREE.Color();
   const tmp2 = new THREE.Color();
   let season = 1;
-  let running = !document.hidden;
-  const onVisibility = () => { running = !document.hidden; };
-  document.addEventListener('visibilitychange', onVisibility);
+  let slot = null;
+  let opacity;
+  const setOpacity = (next) => {
+    if (next === opacity) return;
+    opacity = next;
+    host.style.opacity = next;
+  };
   // Scene time only advances while motion is allowed, so "Pause moving content"
   // freezes the leaves and resuming continues smoothly, without a jump.
   let t = 0;
@@ -340,11 +357,12 @@ export function initLeaves(host, { slots, compact = false, getSeason, tipEl }) {
     return best;
   }
 
-  renderer.setAnimationLoop(() => {
-    if (!running) return;
-    const slot = activeSlot();
-    const opacity = slot ? Math.min(1, slot.ratio * 1.6) : 0;
-    host.style.opacity = opacity.toFixed(3);
+  function frame() {
+    if (slotDirty) {
+      slot = activeSlot();
+      slotDirty = false;
+      setOpacity(slot ? Math.min(1, slot.ratio * 1.6).toFixed(3) : '0');
+    }
     if (!slot) return;
 
     const realDt = Math.min(clock.getDelta(), 0.05);
@@ -437,16 +455,44 @@ export function initLeaves(host, { slots, compact = false, getSeason, tipEl }) {
     }
 
     renderer.render(scene, camera);
+  }
+
+  const visibleSlots = new Set();
+  let running = false;
+  function syncLoop() {
+    const next = !document.hidden && visibleSlots.size > 0;
+    if (next === running) return;
+    running = next;
+    if (running) {
+      clock.start();
+      invalidateSlot();
+    } else {
+      setOpacity('0');
+    }
+    renderer.setAnimationLoop(running ? frame : null);
+  }
+  const visibility = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (entry.isIntersecting) visibleSlots.add(entry.target);
+      else visibleSlots.delete(entry.target);
+    }
+    invalidateSlot();
+    syncLoop();
   });
+  slots.forEach(({ el }) => visibility.observe(el));
+  document.addEventListener('visibilitychange', syncLoop);
 
   if (import.meta.env.DEV) window.__leaves = { emblem, plant, activeSlot, host };
 
   // Full teardown, used when the layout crosses the desktop breakpoint.
   function destroy() {
     renderer.setAnimationLoop(null);
+    visibility.disconnect();
+    sizes.disconnect();
     window.removeEventListener('resize', resize);
+    window.removeEventListener('scroll', invalidateSlot);
     window.removeEventListener('pointermove', onPointer);
-    document.removeEventListener('visibilitychange', onVisibility);
+    document.removeEventListener('visibilitychange', syncLoop);
     slots.forEach((slot) => slot.el.removeEventListener('click', onSlotClick));
     clearTimeout(tipTimer);
     scene.traverse((o) => {

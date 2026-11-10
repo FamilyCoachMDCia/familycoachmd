@@ -26,21 +26,17 @@ export function initSections(ctx) {
   stories(ctx);
 }
 
-// Headlines rise line by line from a mask; the hero's waits for the loader.
+// Section headlines rise line by line from a mask.
 function headlines({ gsap, SplitText, reduce }) {
   if (reduce) return;
   document.querySelectorAll('.split').forEach((el) => {
-    // If the loader already finished, the hero headline plays right away.
-    const isHero = !!el.closest('.hero') && !document.documentElement.classList.contains('is-loaded');
     SplitText.create(el, {
       type: 'lines', mask: 'lines', linesClass: 'line-mask-inner', autoSplit: true,
       onSplit(self) {
         return gsap.from(self.lines, {
           yPercent: 110, duration: 1.1, stagger: 0.1, ease: 'power3.out',
-          paused: isHero,
-          scrollTrigger: isHero ? undefined : { trigger: el, start: 'top 86%', once: true },
+          scrollTrigger: { trigger: el, start: 'top 86%', once: true },
           onStart: () => el.classList.add('is-split'),
-          id: isHero ? 'hero-h1' : undefined,
         });
       },
     });
@@ -119,7 +115,6 @@ function seasons({ gsap, ScrollTrigger, reduce, lenis }) {
   const section = document.querySelector('.seasons');
   const track = section?.querySelector('.season-track');
   if (!track) return;
-  const root = document.documentElement;
   const cards = gsap.utils.toArray('.season', track);
   const dots = gsap.utils.toArray('.season-progress li');
   const mix = (a, b, t) => gsap.utils.interpolate(a, b, t);
@@ -127,7 +122,7 @@ function seasons({ gsap, ScrollTrigger, reduce, lenis }) {
     const i = Math.min(Math.floor(s), 3);
     return mix(TINTS[i], TINTS[i + 1], Math.min(Math.max(s - i, 0), 1));
   };
-  const paint = (c) => root.style.setProperty('--season-bg', c);
+  const paint = (c) => section.style.setProperty('--season-bg', c);
 
   if (reduce) {
     cards.forEach((card, i) => ScrollTrigger.create({
@@ -151,6 +146,8 @@ function seasons({ gsap, ScrollTrigger, reduce, lenis }) {
       const idx = Math.round(pinP * 4);
       dots.forEach((d, i) => d.classList.toggle('is-on', i === idx));
       cards.forEach((c, i) => c.classList.toggle('is-current', i === idx));
+      const p = pinP * (cards.length - 1);
+      cards.forEach((c, i) => { c.style.opacity = String(1 - Math.min(Math.abs(p - i), 1) * 0.45); });
     };
     const introST = ScrollTrigger.create({
       trigger: '.seasons-pin', start: 'top 95%', end: 'top top',
@@ -158,12 +155,10 @@ function seasons({ gsap, ScrollTrigger, reduce, lenis }) {
     });
     const tween = gsap.to(track, {
       x: () => -step() * (cards.length - 1), ease: 'none',
+      onUpdate() { pinP = this.progress(); update(); },
       scrollTrigger: {
         trigger: '.seasons-pin', start: 'top top', end: () => `+=${step() * (cards.length - 1)}`,
-        pin: true, scrub: 1, invalidateOnRefresh: true, anticipatePin: 1,
-        // inertia off: the nearest season wins, so a quick jump never slides one past.
-        snap: { snapTo: 1 / (cards.length - 1), inertia: false, duration: { min: 0.3, max: 0.7 }, delay: 0.08, ease: 'power2.inOut' },
-        onUpdate: (self) => { pinP = self.progress; update(); },
+        pin: true, scrub: 0.25, invalidateOnRefresh: true, anticipatePin: 1,
       },
     });
     gsap.set(cards, { opacity: (i) => (i === 0 ? 1 : 0.55) });
@@ -171,8 +166,7 @@ function seasons({ gsap, ScrollTrigger, reduce, lenis }) {
     const jump = (i) => {
       const st = tween.scrollTrigger;
       const y = st.start + (st.end - st.start) * (i / (cards.length - 1));
-      // Jump instantly: the scrubbed track still glides there on its own, and an
-      // animated scroll would arrive with momentum that snaps one season too far.
+      // The scrubbed track glides to the chosen season after this jump.
       if (lenis) lenis.scrollTo(y, { immediate: true, force: true }); else window.scrollTo(0, y);
     };
     const onDot = (e) => { const b = e.target.closest('button[data-season]'); if (b) jump(Number(b.dataset.season)); };
@@ -180,16 +174,11 @@ function seasons({ gsap, ScrollTrigger, reduce, lenis }) {
     // Keyboard users tabbing into a card are taken to that season.
     const onFocus = (e) => { const c = e.target.closest('.season'); if (c && e.target.matches('a')) jump(cards.indexOf(c)); };
     track.addEventListener('focusin', onFocus);
-    const fade = gsap.ticker.add(() => {
-      const p = pinP * (cards.length - 1);
-      cards.forEach((c, i) => { c.style.opacity = String(1 - Math.min(Math.abs(p - i), 1) * 0.45); });
-    });
     return () => {
       section.classList.remove('is-pinned-mode');
       introST.kill();
       tween.scrollTrigger?.kill();
       tween.kill();
-      gsap.ticker.remove(fade);
       section.removeEventListener('click', onDot);
       track.removeEventListener('focusin', onFocus);
       gsap.set([track, ...cards], { clearProps: 'all' });
@@ -199,12 +188,12 @@ function seasons({ gsap, ScrollTrigger, reduce, lenis }) {
   mm.add('(max-width: 1023px)', () => {
     const triggers = cards.map((card, i) => ScrollTrigger.create({
       trigger: card, start: 'top 65%', end: 'bottom 35%',
-      onToggle: (self) => self.isActive && gsap.to(root, { '--season-bg': TINTS[i], duration: 0.8, ease: 'sine.inOut' }),
+      onToggle: (self) => self.isActive && gsap.to(section, { '--season-bg': TINTS[i], duration: 0.8, ease: 'sine.inOut' }),
     }));
     const out = ScrollTrigger.create({
       trigger: section, start: 'top bottom', end: 'bottom top',
-      onLeave: () => gsap.to(root, { '--season-bg': LINEN, duration: 0.6 }),
-      onLeaveBack: () => gsap.to(root, { '--season-bg': LINEN, duration: 0.6 }),
+      onLeave: () => gsap.to(section, { '--season-bg': LINEN, duration: 0.6 }),
+      onLeaveBack: () => gsap.to(section, { '--season-bg': LINEN, duration: 0.6 }),
     });
     const ins = gsap.from(cards, { y: 40, opacity: 0, duration: 0.8, stagger: 0.1, ease: 'power3.out', scrollTrigger: { trigger: track, start: 'top 85%', once: true } });
     return () => { triggers.forEach((t) => t.kill()); out.kill(); ins.scrollTrigger?.kill(); paint(LINEN); };
@@ -254,23 +243,6 @@ function balance({ gsap, reduce }) {
   gsap.set(beam, { svgOrigin: '240 168' });
   gsap.set(sprouts, { scale: 0, svgOrigin: '240 166' });
   const rot = gsap.quickTo(beam, 'rotation', { duration: reduce ? 0 : 0.9, ease: 'elastic.out(1, 0.45)' });
-  // The books slide a little on the tilted twig, top ones more than the middle ones; the base stays put.
-  const books = [...root.querySelectorAll('.book-top, .book-mid')].map((b) => {
-    gsap.set(b, { svgOrigin: b.dataset.o });
-    const k = b.classList.contains('book-top') ? [0.55, 0.2] : [0.25, 0.08];
-    const o = { duration: reduce ? 0 : 0.8, ease: 'elastic.out(1, 0.5)' };
-    return { el: b, k, x: gsap.quickTo(b, 'x', o), r: gsap.quickTo(b, 'rotation', o) };
-  });
-  const marks = root.querySelectorAll('.book-mark');
-  gsap.set(marks, { scale: 0, transformOrigin: '50% 100%' });
-  const slide = (t) => books.forEach((b) => {
-    if (reduce) return;
-    let dx = t * b.k[0];
-    let dr = t * b.k[1];
-    if (Math.abs(t) > 10 && b.k[0] > 0.5) { dx += Math.sign(t) * 2; dr += Math.sign(t) * 6; }
-    b.x(Math.max(-8, Math.min(8, dx)));
-    b.r(dr);
-  });
   let state = '';
   const text = {
     kind: ['Kind without firm: kids feel loved, but a little lost.', 'Mostly kind'],
@@ -280,17 +252,13 @@ function balance({ gsap, reduce }) {
   const update = (first) => {
     const v = Number(range.value);
     const next = Math.abs(v - 50) <= 8 ? 'balanced' : v < 50 ? 'kind' : 'firm';
-    const tilt = next === 'balanced' ? 0 : ((v - 50) / 50) * 13;
-    rot(tilt);
-    slide(tilt);
+    rot(next === 'balanced' ? 0 : ((v - 50) / 50) * 13);
     if (next === state) return;
     state = next;
     root.dataset.state = next;
     caption.textContent = text[next][0];
     range.setAttribute('aria-valuetext', text[next][1]);
     gsap.to(sprouts, { scale: next === 'balanced' ? 1 : 0, duration: reduce ? 0 : 0.6, stagger: 0.08, ease: next === 'balanced' ? 'back.out(2)' : 'power2.in' });
-    gsap.to(marks, { scale: next === 'balanced' ? 1 : 0, duration: reduce ? 0 : 0.5, stagger: 0.08, ease: next === 'balanced' ? 'back.out(2)' : 'power2.in' });
-    if (next === 'balanced' && !reduce && !first) gsap.fromTo(root.querySelectorAll('.book-top > g'), { y: -4 }, { y: 0, duration: 0.5, ease: 'bounce.out' });
     if (!first && hint) hint.style.visibility = 'hidden';
   };
   range.addEventListener('input', () => update(false));

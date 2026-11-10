@@ -17,9 +17,9 @@ if (reduce) document.documentElement.classList.add('reduce');
 document.documentElement.classList.add('anim');
 const ctx = { gsap, ScrollTrigger, SplitText, reduce, lenis: null };
 
-// Smooth scroll on pointer devices only; touch keeps native scrolling.
+// Keep wheel scrolling native. Lenis still handles animated section links.
 if (!reduce && matchMedia('(hover: hover) and (pointer: fine)').matches) {
-  const lenis = new Lenis({ lerp: 0.08, smoothWheel: true });
+  const lenis = new Lenis({ lerp: 0.08, smoothWheel: false });
   lenis.on('scroll', ScrollTrigger.update);
   gsap.ticker.add((t) => lenis.raf(t * 1000));
   gsap.ticker.lagSmoothing(0);
@@ -50,13 +50,13 @@ runLoader(ctx).then(() => {
 
 function heroIntro() {
   if (reduce) return;
-  gsap.getById('hero-h1')?.play();
+  gsap.from('#hero-title', { y: 24, opacity: 0, duration: 1.05, ease: 'power3.out' });
   const items = gsap.utils.toArray('.hero-rotator, .hero-sub, .hero-lede, .hero-ctas, .hero .chips');
   gsap.from(items, { y: 30, opacity: 0, duration: 0.9, stagger: 0.08, delay: 0.15, ease: 'power3.out' });
   const note = document.querySelector('.hand-note-md');
   if (note && window.innerWidth >= 1024) {
-    gsap.timeline({ delay: 1.2 })
-      .to(note, { opacity: 1, duration: 0.3 })
+    gsap.timeline({ delay: 0.6 })
+      .from(note, { opacity: 0, duration: 0.3 })
       .fromTo(note.querySelector('path'), { drawSVG: '0%' }, { drawSVG: '100%', duration: 0.9, ease: 'power2.inOut' }, 0);
   }
 }

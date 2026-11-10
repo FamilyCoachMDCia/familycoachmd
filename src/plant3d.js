@@ -100,7 +100,7 @@ export function initPlant3d(slot, state) {
     tilt.rotation.x = top ? 0.1 : 0.22;
     tilt.add(leaf.group);
     holder.add(tilt);
-    leaf.group.scale.setScalar(0.001);
+    leaf.group.visible = false;
     pivot.add(holder);
     leaves.push({ ...leaf, tilt, t, open: 0 });
   }
@@ -128,13 +128,11 @@ export function initPlant3d(slot, state) {
   const onMove = (e) => { wind = (e.clientX / window.innerWidth - 0.5) * 2; };
   window.addEventListener('pointermove', onMove, { passive: true });
 
-  let visible = false;
-  const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting; renderer.setAnimationLoop(visible ? frame : null); });
+  const io = new IntersectionObserver(([e]) => renderer.setAnimationLoop(e.isIntersecting ? frame : null));
   io.observe(host);
 
   const clock = new THREE.Clock();
   let first = true;
-  let slow = 0;
   function frame() {
     const dt = Math.min(clock.getDelta(), 0.05);
     const time = clock.elapsedTime;
@@ -151,7 +149,9 @@ export function initPlant3d(slot, state) {
       const want = gg >= THRESH[i] ? 1 : 0;
       l.open += (want - l.open) * Math.min(1, dt * 4);
       const o = l.open;
-      const s = o < 0.001 ? 0.001 : o * (1 + 0.12 * Math.sin(Math.min(o, 1) * Math.PI));
+      l.group.visible = o > 0.001;
+      if (!l.group.visible) return;
+      const s = o * (1 + 0.12 * Math.sin(Math.min(o, 1) * Math.PI));
       l.group.scale.setScalar(s);
       l.group.rotation.x = (1 - o) * 1.1;
       l.u.uTime.value = time;
@@ -168,8 +168,6 @@ export function initPlant3d(slot, state) {
 
     renderer.render(scene, camera);
     if (first) { first = false; document.documentElement.classList.add('has-plant3d'); }
-    // Watchdog: a struggling device falls back to the SVG sprout.
-    if (dt > 1 / 24) { slow += dt; if (slow > 3) destroy(); } else slow = Math.max(0, slow - dt);
   }
 
   renderer.domElement.addEventListener('webglcontextlost', () => destroy());

@@ -53,16 +53,31 @@ function bar({ gsap, reduce }) {
 
 function nav({ ScrollTrigger, lenis }) {
   const head = document.getElementById('site-head');
+  const announcement = document.querySelector('.bar');
+  const root = document.documentElement;
+  let announcementHeight = announcement?.offsetHeight ?? 0;
+  let offset;
   let lastY = 0;
+  const syncOffset = (y) => {
+    // The announcement scrolls away in the document; the nav follows its lower edge.
+    const next = Math.max(0, announcementHeight - y);
+    if (next === offset) return;
+    offset = next;
+    root.style.setProperty('--announcement-offset', `${offset}px`);
+  };
   // Phones: a floating "Jump to" opens the menu and "Top" returns up, so nobody has to scroll far.
   const fab = document.querySelector('.jump-fab');
   fab?.querySelector('.jump-menu')?.addEventListener('click', () => document.querySelector('.burger')?.click());
   fab?.querySelector('.jump-top')?.addEventListener('click', () => { if (lenis) lenis.scrollTo(0); else window.scrollTo({ top: 0, behavior: 'smooth' }); });
   ScrollTrigger.create({
     start: 0, end: 'max',
+    onRefresh: (self) => {
+      announcementHeight = announcement?.offsetHeight ?? 0;
+      syncOffset(self.scroll());
+    },
     onUpdate: (self) => {
       const y = self.scroll();
-      head.classList.toggle('is-scrolled', y > 10);
+      syncOffset(y);
       fab?.classList.toggle('is-down', y > 600);
       if (document.body.classList.contains('menu-open') || head.contains(document.activeElement)) return;
       head.classList.toggle('is-hidden', y > lastY && y > 260);
