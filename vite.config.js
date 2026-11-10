@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 
 // Width x height of each exported -lg photo (same exports as the EP site).
 const PHOTOS = {
-  'business-fair': [1000, 721], capitol: [750, 1000], cooking: [795, 900],
+  'business-fair': [1000, 721], capitol: [750, 1000], cooking: [843, 1264],
   cuisine: [1200, 861], flight: [1100, 802], founder: [700, 933],
   garden: [1000, 737], golf: [960, 540], guitar: [541, 900], hens: [1000, 726],
   horse: [1000, 716], mentoring: [575, 1000], podcast: [800, 1200],
