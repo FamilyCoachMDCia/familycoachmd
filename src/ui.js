@@ -67,7 +67,6 @@ function nav({ ScrollTrigger, lenis }) {
   };
   // Phones: a floating "Jump to" opens the menu and "Top" returns up, so nobody has to scroll far.
   const fab = document.querySelector('.jump-fab');
-  fab?.querySelector('.jump-menu')?.addEventListener('click', () => document.querySelector('.burger')?.click());
   fab?.querySelector('.jump-top')?.addEventListener('click', () => { if (lenis) lenis.scrollTo(0); else window.scrollTo({ top: 0, behavior: 'smooth' }); });
   ScrollTrigger.create({
     start: 0, end: 'max',
@@ -92,40 +91,68 @@ function nav({ ScrollTrigger, lenis }) {
 // behind is inert and can't scroll, Escape closes and returns focus to the button.
 function menu({ gsap, lenis, reduce }) {
   const burger = document.querySelector('.burger');
+  const jump = document.querySelector('.jump-menu');
   const sheet = document.getElementById('menu');
   if (!burger || !sheet) return;
+  const phone = matchMedia('(max-width: 767px)');
   const links = sheet.querySelectorAll('.menu-links li');
+  const phoneBackground = [jump?.closest('.jump-fab'), document.querySelector('.skip')];
   const behind = () => [document.getElementById('main'), document.querySelector('.foot'), document.querySelector('.bar'), document.querySelector('.nav-logo')];
   const focusables = () => [burger, ...sheet.querySelectorAll('a, button')];
   let open = false;
+  let opener = burger;
   const set = (next, { restoreFocus = true } = {}) => {
     open = next;
     burger.setAttribute('aria-expanded', String(open));
     burger.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+    jump?.setAttribute('aria-expanded', String(open));
+    gsap.killTweensOf(sheet);
+    gsap.killTweensOf(links);
     document.body.classList.toggle('menu-open', open);
     behind().forEach((el) => { if (el) el.inert = open; });
+    phoneBackground.forEach((el) => { if (el) el.inert = open && phone.matches; });
     document.documentElement.style.overflow = open ? 'hidden' : '';
     if (open) {
       sheet.hidden = false;
       lenis?.stop();
-      sheet.querySelector('a')?.focus();
-      if (!reduce) {
+      sheet.scrollTop = 0;
+      if (phone.matches) {
+        gsap.set(sheet, { clearProps: 'clipPath' });
+        gsap.set(links, { clearProps: 'transform,opacity' });
+      }
+      sheet.querySelector('a')?.focus({ preventScroll: true });
+      if (!reduce && !phone.matches) {
         gsap.fromTo(sheet, { clipPath: 'inset(0 0 100% 0)' }, { clipPath: 'inset(0 0 0% 0)', duration: 0.6, ease: 'expo.inOut' });
         gsap.fromTo(links, { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, stagger: 0.06, delay: 0.2, ease: 'power3.out' });
       }
     } else {
       lenis?.start();
-      if (restoreFocus) burger.focus();
+      if (phone.matches) {
+        sheet.hidden = true;
+        if (restoreFocus) opener.focus({ preventScroll: true });
+        return;
+      }
+      if (restoreFocus) opener.focus({ preventScroll: true });
       if (reduce) { sheet.hidden = true; return; }
       gsap.to(sheet, { clipPath: 'inset(0 0 100% 0)', duration: 0.5, ease: 'expo.inOut', onComplete: () => { sheet.hidden = true; } });
     }
   };
-  burger.addEventListener('click', () => set(!open));
+  burger.addEventListener('click', () => {
+    if (!open) opener = burger;
+    set(!open);
+  });
+  jump?.addEventListener('click', () => {
+    opener = phone.matches ? jump : burger;
+    set(!open);
+  });
   // A menu link closes the menu; the anchor handler then moves focus to the section.
-  sheet.addEventListener('click', (e) => { if (e.target.closest('a')) set(false, { restoreFocus: false }); });
+  sheet.addEventListener('click', (e) => {
+    const link = e.target.closest('a');
+    if (link) set(false, { restoreFocus: phone.matches && !link.hash });
+  });
   document.addEventListener('keydown', (e) => {
     if (!open) return;
-    if (e.key === 'Escape') { set(false); return; }
+    if (e.key === 'Escape') { e.preventDefault(); set(false); return; }
     if (e.key !== 'Tab') return;
     const f = focusables();
     const first = f[0];
@@ -135,6 +162,7 @@ function menu({ gsap, lenis, reduce }) {
   });
   // The menu only exists on small screens; close it if the window grows.
   matchMedia('(min-width: 1181px)').addEventListener('change', (m) => { if (m.matches && open) set(false, { restoreFocus: false }); });
+  phone.addEventListener('change', () => { if (open) set(false, { restoreFocus: false }); });
 }
 
 // In-page links: smooth scroll, then focus lands on the section heading so

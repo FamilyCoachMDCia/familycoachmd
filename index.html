@@ -99,7 +99,7 @@
   <p id="motion-status" class="sr-only" role="status"></p>
 </header>
 
-<div id="menu" class="menu" hidden>
+<nav id="menu" class="menu" aria-label="Jump to a section" data-lenis-prevent hidden>
   <ul class="menu-links">
     <li><a href="#who">Who we help</a></li>
     <li><a href="#seasons">Seasons</a></li>
@@ -116,7 +116,7 @@
   </ul>
   <div class="menu-seasons" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
   <p class="menu-contact"><a href="mailto:Grow@familycoachmd.com">Grow@familycoachmd.com</a></p>
-</div>
+</nav>
 
 <!-- One WebGL canvas for the hero and the seasons (desktop) -->
 <div id="leaves-stage" class="leaves-stage" aria-hidden="true"></div>
@@ -581,13 +581,13 @@
   <ul class="stories wrap">
     <li class="story">
       <button class="story-link" type="button" data-open="letter">
-        <span class="story-img blurup"><img data-photo="founder" alt="" loading="lazy" sizes="(max-width: 767px) 90vw, 380px"></span>
+        <span class="story-img blurup"><img data-photo="founder" alt="" loading="lazy" sizes="(max-width: 767px) 34vw, 380px"></span>
         <span class="story-body"><span class="story-title">A letter from Dr. Che</span><span class="story-meta">Read the letter →</span></span>
       </button>
     </li>
     <li class="story">
       <a class="story-link" href="#begin" data-reason="Self-paced courses waitlist">
-        <span class="story-img blurup"><img data-photo="cooking" alt="" loading="lazy" sizes="(max-width: 767px) 90vw, 380px"></span>
+        <span class="story-img blurup"><img data-photo="cooking" alt="" loading="lazy" sizes="(max-width: 767px) 34vw, 380px"></span>
         <span class="story-body"><span class="story-title">Self-paced courses</span><span class="story-meta">Ask to join the waitlist →</span></span>
       </a>
     </li>
@@ -721,7 +721,7 @@
   </div>
 </footer>
 
-<div class="jump-fab"><button class="jump-top" type="button">↑ Top</button><button class="jump-menu" type="button" aria-controls="menu">Jump to</button></div>
+<div class="jump-fab"><button class="jump-top" type="button">↑ Top</button><button class="jump-menu" type="button" aria-controls="menu" aria-expanded="false">Jump to</button></div>
 
 <script type="module" src="/src/main.js"></script>
 </body>
