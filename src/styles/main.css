@@ -631,7 +631,7 @@ html.anim:not(.reduce) .reveal, html.anim:not(.reduce) .reveal-photo { opacity: 
   .value-cards, .course-cards { grid-template-columns: 1fr; }
   .book-fields { grid-template-columns: 1fr; }
   .cm-step { grid-template-columns: 1fr; }
-  .leaf-frame { max-width: 240px; }
+  .leaf-frame { width: min(100%, 240px); justify-self: center; }
   .cm-letters { display: none; }
   .cm-step h3 b { font-size: 1.5em; }
   .foot-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); overflow-wrap: anywhere; }
@@ -710,9 +710,61 @@ html.anim:not(.reduce) .reveal, html.anim:not(.reduce) .reveal-photo { opacity: 
 .press-link { display: contents; color: inherit; text-decoration: none; }
 .press-link:hover .press-title { text-decoration: underline; }
 .learning-cta { flex-shrink: 0; }
-.socials { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 18px; }
-.socials a { display: inline-block; padding: 9px 16px; border-radius: 99px; border: 1px solid rgba(244, 239, 231, .3); color: var(--linen); text-decoration: none; font: 500 .78rem/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; }
-.socials a:hover { background: rgba(244, 239, 231, .1); }
+.socials { display: flex; flex-wrap: wrap; gap: 8px; }
+.socials-founder {
+  --social-bg: rgba(255, 255, 255, .55);
+  --social-ink: var(--evergreen-deep);
+  --social-border: rgba(52, 71, 52, .24);
+  --social-accent: var(--ochre-ink);
+  --social-active-bg: var(--evergreen);
+  --social-active-ink: var(--linen);
+  --social-active-icon: var(--amber);
+  margin-top: 20px;
+}
+.socials-footer {
+  --social-bg: rgba(244, 239, 231, .07);
+  --social-ink: var(--linen);
+  --social-border: rgba(244, 239, 231, .28);
+  --social-accent: var(--amber);
+  --social-active-bg: var(--linen);
+  --social-active-ink: var(--evergreen-deep);
+  --social-active-icon: var(--ochre-ink);
+  margin-bottom: 18px;
+}
+.social-link {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px;
+  border-radius: 99px; border: 1px solid var(--social-border); background: var(--social-bg);
+  color: var(--social-ink); text-decoration: none; font: 600 .9rem/1 var(--f-body);
+  transition: transform .3s var(--ease), color .25s, background-color .25s, border-color .25s;
+}
+.socials-footer .social-link {
+  font: 500 .72rem/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase;
+}
+.social-icon {
+  flex: none; width: 18px; height: 18px; color: var(--social-accent);
+  transition: transform .3s var(--ease), color .25s;
+}
+.social-link:focus-visible, .social-link:active {
+  background: var(--social-active-bg); color: var(--social-active-ink);
+  border-color: var(--social-active-bg);
+}
+.social-link:focus-visible .social-icon, .social-link:active .social-icon { color: var(--social-active-icon); }
+@media (hover: hover) {
+  .social-link:hover {
+    background: var(--social-active-bg); color: var(--social-active-ink);
+    border-color: var(--social-active-bg);
+  }
+  .social-link:hover .social-icon { color: var(--social-active-icon); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .social-link:focus-visible { transform: translateY(-3px); }
+  .social-link:focus-visible .social-icon { transform: rotate(-10deg) scale(1.1); }
+  .social-link:active { transform: scale(.97); }
+  @media (hover: hover) {
+    .social-link:hover { transform: translateY(-3px); }
+    .social-link:hover .social-icon { transform: rotate(-10deg) scale(1.1); }
+  }
+}
 .hero-face { position: absolute; right: 68px; bottom: 96px; z-index: 4; display: grid; justify-items: center; gap: 6px; text-decoration: none; color: var(--ink); }
 .hero-face img { width: 148px; height: 148px; border-radius: 50%; object-fit: cover; object-position: 50% 22%; border: 5px solid var(--linen); box-shadow: 0 14px 34px rgba(30, 42, 31, .18); transition: transform .4s var(--ease); }
 .hero-face:hover img { transform: scale(1.04) rotate(-2deg); }
@@ -768,6 +820,10 @@ html.has-plant3d .sprout > svg { visibility: hidden; }
 @media (max-width: 767px) {
   html { overflow-x: clip; }
   .cm-foot .btn { white-space: normal; line-height: 1.25; padding-block: 10px; }
+  .socials { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; max-width: 380px; }
+  .social-link { width: 100%; justify-content: center; gap: 5px; padding-inline: 5px; font-size: .8rem; }
+  .socials-footer .social-link { font-size: .68rem; letter-spacing: .025em; }
+  .social-icon { width: 15px; height: 15px; }
 
   /* Keep the close button visible even if Jump to was used after scrolling down. */
   .menu-open .site-head { top: 0; transform: none; transition: none; background: var(--linen); padding-bottom: 8px; }
